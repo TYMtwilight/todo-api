@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.4.8'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.openapi.generator' version '7.1.0'
 }
 
 group = 'com.example'
@@ -28,8 +29,16 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
+	implementation 'org.postgresql:postgresql'
+
+	// OpenAPI
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
+	implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+	implementation 'io.swagger.core.v3:swagger-annotations:2.2.16'
+
+	// Lombok
 	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -38,3 +47,36 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// OpenAPI Generator設定
+openApiGenerate {
+    generatorName = 'spring'
+    inputSpec = "$projectDir/src/main/resources/api/openapi.yaml".toString()
+    outputDir = "$buildDir/generated".toString()
+    apiPackage = 'com.example.todoapi.generated.api'
+    modelPackage = 'com.example.todoapi.generated.model'
+    configOptions = [
+        interfaceOnly: 'true',
+        useTags: 'true',
+        skipDefaultInterface: 'true',
+        useSpringBoot3: 'true'
+    ]
+    typeMappings = [
+        'OffsetDateTime': 'LocalDateTime'
+    ]
+    importMappings = [
+        'LocalDateTime': 'java.time.LocalDateTime'
+    ]
+}
+
+// 生成されたコードをソースセットに追加
+sourceSets {
+    main {
+        java {
+            srcDir "$buildDir/generated/src/main/java"
+        }
+    }
+}
+
+// コンパイル前にOpenAPI生成を実行
+compileJava.dependsOn tasks.openApiGenerate
